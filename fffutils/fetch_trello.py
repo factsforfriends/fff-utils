@@ -5,22 +5,38 @@ import sys
 import json
 from trello import TrelloClient
 from slugify import slugify
+import spacy
 
 from .push_cms import push
+from .image import recommend_images, load_keywords, load_keyword_matcher
 
-def fetch_trello(args, log):
+def connect_board(id, log=None):
     # Get neccessary environmental variables
     trello_api_key = os.getenv('TRELLO_API_KEY', '')
     trello_api_secret = os.getenv('TRELLO_API_SECRET', '')
 
     if trello_api_key == '' or trello_api_secret == '':
-        sys.exit('Could not find Trello API credentials in environment. Please set TRELLO_API_KEY and TRELLO_API_SECRET.')
+        if log is not None:
+            log.error('Could not find Trello API credentials in environment. Please set TRELLO_API_KEY and TRELLO_API_SECRET.')
+        sys.exit(1)
 
     # Create connection to Trello
     client = TrelloClient(api_key = trello_api_key, api_secret = trello_api_secret)
-    
+
+    return(client.get_board(id))
+
+def get_custom_field_value(name, fields, default='', log=None):
+    try:
+        val = fields[name]
+    except:
+        if log is not None:
+            log.error('Could not get custom field {}'.format(name))
+        return(default)
+    return(val.rstrip())
+
+def fetch_trello(args, log):
     # Get list to operate on
-    board = client.get_board(args.board)
+    board = connect_board(args.board, log)
     input_list = board.get_list(args.from_list)
 
     # Fetch custom field definitions
@@ -41,42 +57,14 @@ def fetch_trello(args, log):
         
         # Extract custom fields
         custom_fields = dict(zip([x.name.lower() for x in card.custom_fields], [x.value for x in card.custom_fields]))
-        log.debug('Found custom fields: {}'.format(",".join(custom_fields.keys())))
+        log.debug('Found custom fields {} on card {}'.format(','.join(custom_fields.keys()), title))
 
-        # Extract CMS ID
-        try:
-            id = custom_fields['id']
-        except:
-            id = ''
-            pass
-
-        # Extract date
-        try:
-            date = custom_fields['datum']
-        except:
-            date = '?'
-            card.create_label('Date missing', 'red')
-            log.debug('Could not get custom field \'Datum\' for card {}'.format(card.name))
-            pass
-
-        # Extract category
-        try:
-            category = custom_fields['kategorie']
-        except:
-            # predict category
-            category = 'None'
-            log.debug('Could not get custom field \'Kategorie\' for card {}'.format(card.name))
-            pass
-        
-        # Extract medium
-        try:
-            medium = custom_fields['medium']
-        except:
-            # predict medium
-            medium = 'None'
-            log.debug('Could not get custom field \'Medium\' for card {}'.format(card.name))
-            pass
-        # Predict medium, location, category, tags
+        # Extract custom fields
+        id = get_custom_field_value('id', custom_fields, '', log=log)
+        date = get_custom_field_value('datum', custom_fields, '?', log=log)
+        category = get_custom_field_value('kategorie', custom_fields, 'None', log=log)
+        medium = get_custom_field_value('medium', custom_fields, '', log=log)
+        image = get_custom_field_value('bild', custom_fields, '', log=log)
         
         d = {
             "_id": id,
@@ -86,10 +74,40 @@ def fetch_trello(args, log):
             "url": source,
             "date": date,
             "category": category,
-            "medium": medium
+            "medium": medium,
+            "image_url": image
         }
 
-        # Push to CMS?
+        #
+        # Login to recommend images for the card, if no image is chosen
+        #
+        if args.recommend_images and image == '':
+            nlp = spacy.load("de_core_news_md")
+
+            prediction_categories = ["gesundheit", "politik"]
+            if category.lower() in prediction_categories:
+                keywords = load_keywords(prediction_categories, nlp, log=log)
+                matcher = load_keyword_matcher(keywords, nlp, log=log)
+
+                # Predict image based on headline and first sentence
+                recommender_text = d["headline"] + d["snack"].split(".")[0]
+                image_ids = recommend_images(recommender_text, matcher[category.lower()], nlp, 3)
+
+                if len(image_ids) > 0:
+                    # Get image name, instead of its id
+                    image_names = [keywords[category.lower()][int(id)]['name'] for id in image_ids]
+
+                    # Comment recommendations on card
+                    image_texts = ['Use `{}` for https://unsplash.com/photos/{}'.format(name, name) for name in image_names]
+                    card.comment('**Image recommendations**\n' + '\n'.join(image_texts))
+                else:
+                    card.comment('I could not find a suitable image :-(')
+            else:
+                log.debug('Category {} missing for image recommendation'.format(category.lower()))
+
+        #
+        # Logic to push snack to the CMS
+        #
         if args.push:
             res = push(d, log)[0]
 

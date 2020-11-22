@@ -18,6 +18,7 @@ def main():
     parser_fetch.add_argument('--from-list', help='ID of the list containing incoming snacks', type=str, required=True)
     parser_fetch.add_argument('--move-to', help='ID of the list where processed snacks should be moved to', type=str, required=False)
     parser_fetch.add_argument('--push', help='Indicates if the fetched snacks should be pushed to the CMS.', action='store_true')
+    parser_fetch.add_argument('--recommend-images', help='Indicates if the image recommender should be run.', action='store_true')
     parser_fetch.set_defaults(func=fetch_trello)
 
     # Command-line arguments for the push-trello command

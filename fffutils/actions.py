@@ -6,6 +6,8 @@ import json
 from slugify import slugify
 
 from .trello import connect_board, get_custom_field_value, extract_source_url
+from .unsplash import retrieve_url, get_binary_photo
+from .aws import upload_object
 from .strapi import push
 
 def fetch_trello(args, log):
@@ -39,6 +41,12 @@ def fetch_trello(args, log):
         category = get_custom_field_value('kategorie', custom_fields, 'None', log=log)
         medium = get_custom_field_value('medium', custom_fields, '', log=log)
         image = get_custom_field_value('bild', custom_fields, '', log=log)
+
+        # Get unsplash image 
+        image_source_url = retrieve_url(image, 'regular', log=log)
+
+        # Upload image to AWS
+        upload_object(get_binary_photo(image_source_url), image+'.jpg', 'fff-snack-images', log=log)
         
         d = {
             "_id": id,
@@ -49,7 +57,7 @@ def fetch_trello(args, log):
             "date": date,
             "category": category,
             "medium": medium,
-            "image_url": image
+            "image_url": 'https://fff-snack-images.s3.amazonaws.com/'+image+'.jpg'
         }
 
 

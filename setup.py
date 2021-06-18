@@ -18,8 +18,9 @@ setup(name='fff-utils',
       },
       scripts = [],
       install_requires=[
-        'slugify',
-        'py-trello'
+        'python-slugify',
+        'py-trello',
+        'urllib3'
       ],
       classifiers = [
         'License :: OSI Approved :: MIT License',

@@ -1,0 +1,1 @@
+*/2 * * * * /opt/pypy/bin/fff-utils trello-strapi --board 5eaafc87db2cf64df3623791 --from-list 5eaafcb771489a8cd4845676 --move-to 5fa69b0f3dceb5830a5807be --push > /proc/1/fd/1 2>/proc/1/fd/2

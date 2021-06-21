@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setup(name='fff-utils',
-      version='0.1',
+      version='0.9',
       description='Utilities for FactsForFriends',
       long_description=readme(),
       url='https://github.com/factsforfriends/fff-utils',
@@ -18,6 +18,7 @@ setup(name='fff-utils',
       },
       scripts = [],
       install_requires=[
+        'boto3',
         'python-slugify',
         'py-trello',
         'urllib3'

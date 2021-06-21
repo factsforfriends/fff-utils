@@ -5,13 +5,6 @@ import sys
 import urllib3
 import json
 
-def push_strapi(args, log):
-    with open(args.data, 'r') as json_file:
-        data = json.load(json_file)
-        responses = push(data, log)
-
-    return(responses)
-
 def push(data, log = None):
     if not isinstance(data, list): 
         data = [data]

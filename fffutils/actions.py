@@ -9,6 +9,7 @@ from .trello import connect_board, get_custom_field_value, extract_source_url
 from .unsplash import retrieve_url, get_binary_photo
 from .aws import upload_object
 from .strapi import push
+from .helper import split_claim_fact
 
 def trello_strapi(args, log):
     '''
@@ -25,7 +26,7 @@ def trello_strapi(args, log):
     results = list()
     for card in input_list.list_cards():
         title = card.name
-        text = card.description
+        (claim, fact) = split_claim_fact(card.description)
         
         try:
             source = extract_source_url(card)
@@ -53,7 +54,7 @@ def trello_strapi(args, log):
             upload_object(get_binary_photo(image_source_url), image+'.jpg', 'fff-snack-images', log=log)
 
             image_url = 'https://fff-snack-images.s3.amazonaws.com/'+image+'.jpg'
-            log.debug('Uploaded image {} from Unsplash to AWS'.format(image))
+            #log.debug('Uploaded image {} from Unsplash to AWS'.format(image))
         else:
             image_url = ''
         
@@ -61,13 +62,15 @@ def trello_strapi(args, log):
             "_id": id,
             "slug": slugify(title),
             "headline": title,
-            "snack": text,
+            "claim": claim,
+            "snack": fact,
             "url": source,
             "date": date,
             "category": category,
             "medium": medium,
             "image_url": image_url
         }
+        log.debug('Final snack looks like {}'.format(d))
 
         #
         # Logic to push snack to Strapi

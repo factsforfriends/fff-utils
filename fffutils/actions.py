@@ -10,7 +10,10 @@ from .unsplash import retrieve_url, get_binary_photo
 from .aws import upload_object
 from .strapi import push
 
-def fetch_trello(args, log):
+def trello_strapi(args, log):
+    '''
+    Manages the data upload from a Trello board to the Strapi CMS.
+    '''
     # Get list to operate on
     board = connect_board(args.board, log)
     input_list = board.get_list(args.from_list)
@@ -43,10 +46,16 @@ def fetch_trello(args, log):
         image = get_custom_field_value('bild', custom_fields, '', log=log)
 
         # Get unsplash image 
-        image_source_url = retrieve_url(image, 'regular', log=log)
+        if image != '':
+            image_source_url = retrieve_url(image, 'regular', log=log)
+            
+            # Upload image to AWS
+            upload_object(get_binary_photo(image_source_url), image+'.jpg', 'fff-snack-images', log=log)
 
-        # Upload image to AWS
-        upload_object(get_binary_photo(image_source_url), image+'.jpg', 'fff-snack-images', log=log)
+            image_url = 'https://fff-snack-images.s3.amazonaws.com/'+image+'.jpg'
+            log.debug('Uploaded image {} from Unsplash to AWS'.format(image))
+        else:
+            image_url = ''
         
         d = {
             "_id": id,
@@ -57,9 +66,8 @@ def fetch_trello(args, log):
             "date": date,
             "category": category,
             "medium": medium,
-            "image_url": 'https://fff-snack-images.s3.amazonaws.com/'+image+'.jpg'
+            "image_url": image_url
         }
-
 
         #
         # Logic to push snack to Strapi
@@ -85,3 +93,13 @@ def fetch_trello(args, log):
         results.append(d)
 
     return(results)
+
+def local_strapi(args, log):
+    '''
+    Uploads data from a local JSON file to Strapi
+    '''
+    with open(args.data, 'r') as json_file:
+        data = json.load(json_file)
+        responses = push(data, log)
+
+    return(responses)

@@ -5,6 +5,9 @@ import sys
 import boto3
 
 def upload_object(data, key, bucket, content_type = 'image/jpeg', log = None):
+    '''
+    Uploads a binary data stream to a S3 bucket. Requires ~/.aws/credentials
+    '''
     s3 = boto3.resource('s3')
 
     try: 

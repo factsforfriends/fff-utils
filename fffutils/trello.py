@@ -6,6 +6,9 @@ import json
 from trello import TrelloClient
 
 def connect_board(id, log=None):
+    '''
+    Connects to a Trello board with ID id
+    '''
     # Get neccessary environmental variables
     trello_api_key = os.getenv('TRELLO_API_KEY', '')
     trello_api_secret = os.getenv('TRELLO_API_SECRET', '')
@@ -21,6 +24,9 @@ def connect_board(id, log=None):
     return(client.get_board(id))
 
 def get_custom_field_value(name, fields, default='', log=None):
+    '''
+    Helper function to obtain the value of a custom field
+    '''
     try:
         val = fields[name]
     except:
@@ -30,6 +36,9 @@ def get_custom_field_value(name, fields, default='', log=None):
     return(val.rstrip())
 
 def extract_source_url(card):
+    '''
+    Helper function to extract a URL from a cards attachments
+    '''
     source = ''
 
     for attachment in card.attachments:

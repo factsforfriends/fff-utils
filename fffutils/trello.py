@@ -31,20 +31,24 @@ def get_custom_field_value(name, fields, default='', log=None):
         val = fields[name]
     except:
         if log is not None:
-            log.error('Could not get custom field {}'.format(name))
+            log.debug('Could not get custom field {}'.format(name))
         return(default)
     return(val.rstrip())
 
-def extract_source_url(card):
+def extract_attachments(card):
     '''
-    Helper function to extract a URL from a cards attachments
+    Helper function to extract URLs and images from a cards attachments
     '''
-    source = ''
-
+    attachments = dict()
     for attachment in card.attachments:
+        attachment_type = ''
         if attachment['url'].startswith('http'):
-            source = attachment['url']
+            if attachment['name'].endswith('.png'):
+                attachment_type = 'sharepic'
+            else:
+                attachment_type = 'source'
+        
+        if attachment_type is not '':
+            attachments[attachment_type] = attachment['url']
     
-    if source == '':
-        raise Exception('No valid source URL found in attachments.')
-    return(source)
+    return(attachments)

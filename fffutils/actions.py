@@ -3,13 +3,14 @@
 import os
 import sys
 import json
+import datetime
 from slugify import slugify
 
-from .trello import connect_board, get_custom_field_value, extract_source_url
+from .trello import connect_board, get_custom_field_value, extract_attachments
 from .unsplash import retrieve_url, get_binary_photo
 from .aws import upload_object
 from .strapi import push
-from .helper import split_claim_fact
+from .helper import split_claim_fact, stopwords
 
 def trello_strapi(args, log):
     '''
@@ -27,21 +28,33 @@ def trello_strapi(args, log):
     for card in input_list.list_cards():
         title = card.name
         (claim, fact) = split_claim_fact(card.description)
+        slug = slugify(title, stopwords = stopwords())
+        
+        # Handle attachments to find URL and Sharepic
+        attachments = extract_attachments(card)
+
+        try:
+            source = attachments['source']
+        except KeyError:
+            log.error('Missing source URL on snack {}'.format(title))
+            break
         
         try:
-            source = extract_source_url(card)
-        except Exception as e:
-            # Add label to card to indicate missing source URL
-            log.error(e)
-            next
+            sharepic_source_url = attachments['sharepic']
+
+            # Upload image to AWS
+            upload_object(get_binary_photo(sharepic_source_url), slug+'.png', 'fff-sharepics', log=log)
+            sharepic_url = 'https://fff-sharepics.s3.amazonaws.com/'+slug+'.png'
+        except KeyError:
+            sharepic_url = ''
+            log.debug('Missing sharepic URL on snack {}'.format(title))
         
         # Extract custom fields
         custom_fields = dict(zip([x.name.lower() for x in card.custom_fields], [x.value for x in card.custom_fields]))
         log.debug('Found custom fields {} on card {}'.format(','.join(custom_fields.keys()), title))
 
-        # Extract custom fields
         id = get_custom_field_value('id', custom_fields, '', log=log)
-        date = get_custom_field_value('datum', custom_fields, '?', log=log)
+        date = get_custom_field_value('datum', custom_fields, str(datetime.datetime.now()), log=log)
         category = get_custom_field_value('kategorie', custom_fields, 'None', log=log)
         medium = get_custom_field_value('medium', custom_fields, '', log=log)
         image = get_custom_field_value('bild', custom_fields, '', log=log)
@@ -60,7 +73,7 @@ def trello_strapi(args, log):
         
         d = {
             "_id": id,
-            "slug": slugify(title),
+            "slug": slug,
             "headline": title,
             "claim": claim,
             "snack": fact,
@@ -68,7 +81,8 @@ def trello_strapi(args, log):
             "date": date,
             "category": category,
             "medium": medium,
-            "image_url": image_url
+            "image_url": image_url,
+            "sharepic_url": sharepic_url
         }
         log.debug('Final snack looks like {}'.format(d))
 

@@ -1,0 +1,11 @@
+## 0.9.1
+
+New features include:
+
+- Automatic upload of sharepics to AWS
+- No upload if source URL is missing
+- Check date before pushing in trello_strapi
+
+## 0.9
+
+This is the initial version of the tool. It features uploading data from Trello to Strapi and uploading data from a local file to Strapi.

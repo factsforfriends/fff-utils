@@ -4,6 +4,7 @@ import os
 import sys
 import json
 import datetime
+import dateutil.parser
 from slugify import slugify
 
 from .trello import connect_board, get_custom_field_value, extract_attachments
@@ -54,7 +55,7 @@ def trello_strapi(args, log):
         log.debug('Found custom fields {} on card {}'.format(','.join(custom_fields.keys()), title))
 
         id = get_custom_field_value('id', custom_fields, '', log=log)
-        date = get_custom_field_value('datum', custom_fields, str(datetime.datetime.now()), log=log)
+        date = get_custom_field_value('datum', custom_fields, str(datetime.datetime.now().replace(microsecond=0).isoformat()), log=log)
         category = get_custom_field_value('kategorie', custom_fields, 'None', log=log)
         medium = get_custom_field_value('medium', custom_fields, '', log=log)
         image = get_custom_field_value('bild', custom_fields, '', log=log)
@@ -87,9 +88,10 @@ def trello_strapi(args, log):
         log.debug('Final snack looks like {}'.format(d))
 
         #
-        # Logic to push snack to Strapi
+        # Logic to push snack to Strapi if date is not newer
         #
-        if args.push:
+        snack_date = dateutil.parser.parse(date)
+        if args.push and snack_date.date() <= datetime.date.today():
             res = push(d, log)[0]
 
             try:

@@ -5,7 +5,7 @@ def readme():
         return f.read()
 
 setup(name='fff-utils',
-      version='0.9.1',
+      version='0.11',
       description='Utilities for FactsForFriends',
       long_description=readme(),
       url='https://github.com/factsforfriends/fff-utils',

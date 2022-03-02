@@ -39,7 +39,7 @@ def extract_attachments(card):
     '''
     Helper function to extract URLs and images from a cards attachments
     '''
-    attachments = dict()
+    attachments = list()
     for attachment in card.attachments:
         attachment_type = ''
         if attachment['url'].startswith('http'):
@@ -49,6 +49,6 @@ def extract_attachments(card):
                 attachment_type = 'source'
         
         if attachment_type is not '':
-            attachments[attachment_type] = attachment['url']
+            attachments.append({'type': attachment_type, 'url': attachment['url']})
     
     return(attachments)

@@ -33,13 +33,15 @@ def retrieve_url(id, size, log = None):
             return(None)
     return(None)
 
-def get_binary_photo(url, log = None):
+def get_binary_photo(url, headers = None, log = None):
     '''
     Retrieves a binary representation of the image at url
     '''
     http = urllib3.PoolManager()
     try:
-        r = http.request('GET', url)
+        if log is not None:
+            log.debug('Retireving URL {}'.format(url))
+        r = http.request('GET', url, headers = headers)
         return(r.data)
     except Exception as e:
         if log is not None:

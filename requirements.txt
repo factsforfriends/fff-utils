@@ -2,3 +2,4 @@ py-trello
 python-slugify
 urllib3
 boto3
+spacy

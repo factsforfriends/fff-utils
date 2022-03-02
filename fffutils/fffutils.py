@@ -4,7 +4,7 @@ import argparse
 import logging
 import json
 import sys
-from .actions import trello_strapi, local_strapi
+from .actions import trello_strapi, trello_collections, local_strapi, strapi_recommendations
 
 def main():
     parser = argparse.ArgumentParser(description='Utilities for FactsForFriends')
@@ -31,6 +31,17 @@ def main():
     parser_cms = subparsers.add_parser('local-strapi', help='Push local snacks to Strapi.')
     parser_cms.add_argument('--data', help='JSON data to push.', type=str, required=True)
     parser_cms.set_defaults(func=local_strapi)
+
+    # Command-line arguments for adding recommendations to strapi
+    parser_recommendations = subparsers.add_parser('strapi-recommendations', help='Add recommendations for each fact to Strapi.')
+    parser_recommendations.add_argument('--n', help = 'Number of recommendations to add', type=int, default = 3)
+    parser_recommendations.set_defaults(func=strapi_recommendations)
+
+    # Command-line arguments for adding collections to strapi
+    parser_collections = subparsers.add_parser('trello-collections', help='Add collections to Strapi.')
+    parser_collections.add_argument('--board', help='ID of the Trello board', type=str, required=True)
+    parser_collections.add_argument('--from-list', help='ID of the list containing incoming snacks', type=str, required=True)
+    parser_collections.set_defaults(func=trello_collections)
 
     args = parser.parse_args()
 
